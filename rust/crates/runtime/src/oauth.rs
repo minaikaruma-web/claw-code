@@ -324,12 +324,12 @@ fn generate_random_token(bytes: usize) -> io::Result<String> {
 }
 
 fn credentials_home_dir() -> io::Result<PathBuf> {
-    if let Some(path) = std::env::var_os("CLAUDE_CONFIG_HOME") {
+    if let Some(path) = std::env::var_os("CLAW_CONFIG_HOME") {
         return Ok(PathBuf::from(path));
     }
     let home = std::env::var_os("HOME")
         .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "HOME is not set"))?;
-    Ok(PathBuf::from(home).join(".claude"))
+    Ok(PathBuf::from(home).join(".claw"))
 }
 
 fn read_credentials_root(path: &PathBuf) -> io::Result<Map<String, Value>> {
@@ -448,7 +448,6 @@ fn decode_hex(byte: u8) -> Result<u8, String> {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::{Mutex, OnceLock};
     use std::time::{SystemTime, UNIX_EPOCH};
 
     use super::{
@@ -470,10 +469,7 @@ mod tests {
     }
 
     fn env_lock() -> std::sync::MutexGuard<'static, ()> {
-        static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
-        LOCK.get_or_init(|| Mutex::new(()))
-            .lock()
-            .expect("env lock")
+        crate::test_env_lock()
     }
 
     fn temp_config_home() -> std::path::PathBuf {
@@ -545,7 +541,7 @@ mod tests {
     fn oauth_credentials_round_trip_and_clear_preserves_other_fields() {
         let _guard = env_lock();
         let config_home = temp_config_home();
-        std::env::set_var("CLAUDE_CONFIG_HOME", &config_home);
+        std::env::set_var("CLAW_CONFIG_HOME", &config_home);
         let path = credentials_path().expect("credentials path");
         std::fs::create_dir_all(path.parent().expect("parent")).expect("create parent");
         std::fs::write(&path, "{\"other\":\"value\"}\n").expect("seed credentials");
@@ -571,7 +567,7 @@ mod tests {
         assert!(cleared.contains("\"other\": \"value\""));
         assert!(!cleared.contains("\"oauth\""));
 
-        std::env::remove_var("CLAUDE_CONFIG_HOME");
+        std::env::remove_var("CLAW_CONFIG_HOME");
         std::fs::remove_dir_all(config_home).expect("cleanup temp dir");
     }
 
