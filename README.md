@@ -1,23 +1,34 @@
-# Rewriting Project Claw Code
+# Claw Code
 
 <p align="center">
-  <strong>⭐ The fastest repo in history to surpass 50K stars, reaching the milestone in just 2 hours after publication ⭐</strong>
+  <a href="https://github.com/ultraworkers/claw-code">ultraworkers/claw-code</a>
+  ·
+  <a href="./USAGE.md">Usage</a>
+  ·
+  <a href="./rust/README.md">Rust workspace</a>
+  ·
+  <a href="./PARITY.md">Parity</a>
+  ·
+  <a href="./ROADMAP.md">Roadmap</a>
+  ·
+  <a href="https://discord.gg/5TUQKqFWd">UltraWorkers Discord</a>
 </p>
 
 <p align="center">
-  <a href="https://star-history.com/#instructkr/claw-code&Date">
+  <a href="https://star-history.com/#ultraworkers/claw-code&Date">
     <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=instructkr/claw-code&type=Date&theme=dark" />
-      <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=instructkr/claw-code&type=Date" />
-      <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=instructkr/claw-code&type=Date" width="600" />
+      <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=ultraworkers/claw-code&type=Date&theme=dark" />
+      <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=ultraworkers/claw-code&type=Date" />
+      <img alt="Star history for ultraworkers/claw-code" src="https://api.star-history.com/svg?repos=ultraworkers/claw-code&type=Date" width="600" />
     </picture>
   </a>
 </p>
 
 <p align="center">
-  <img src="assets/clawd-hero.jpeg" alt="Claw" width="300" />
+  <img src="assets/claw-hero.jpeg" alt="Claw Code" width="300" />
 </p>
 
+<<<<<<< HEAD
 <p align="center">
   <strong>Better Harness Tools, not merely storing the archive of leaked Claw Code</strong>
 </p>
@@ -25,14 +36,24 @@
 <p align="center">
   <a href="https://github.com/sponsors/instructkr"><img src="https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?logo=github&style=for-the-badge" alt="Sponsor on GitHub" /></a>
 </p>
+=======
+Claw Code is the public Rust implementation of the `claw` CLI agent harness.
+The canonical implementation lives in [`rust/`](./rust), and the current source of truth for this repository is **ultraworkers/claw-code**.
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
 
 > [!IMPORTANT]
-> **Rust port is now in progress** on the [`dev/rust`](https://github.com/instructkr/claw-code/tree/dev/rust) branch and is expected to be merged into main today. The Rust implementation aims to deliver a faster, memory-safe harness runtime. Stay tuned — this will be the definitive version of the project.
+> Start with [`USAGE.md`](./USAGE.md) for build, auth, CLI, session, and parity-harness workflows. Make `claw doctor` your first health check after building, use [`rust/README.md`](./rust/README.md) for crate-level details, read [`PARITY.md`](./PARITY.md) for the current Rust-port checkpoint, and see [`docs/container.md`](./docs/container.md) for the container-first workflow.
 
-> If you find this work useful, consider [sponsoring @instructkr on GitHub](https://github.com/sponsors/instructkr) to support continued open-source harness engineering research.
+## Current repository shape
 
----
+- **`rust/`** — canonical Rust workspace and the `claw` CLI binary
+- **`USAGE.md`** — task-oriented usage guide for the current product surface
+- **`PARITY.md`** — Rust-port parity status and migration notes
+- **`ROADMAP.md`** — active roadmap and cleanup backlog
+- **`PHILOSOPHY.md`** — project intent and system-design framing
+- **`src/` + `tests/`** — companion Python/reference workspace and audit helpers; not the primary runtime surface
 
+<<<<<<< HEAD
 ## Rust Port
 
 The Rust workspace under `rust/` is the current systems-language port of the project.
@@ -144,31 +165,62 @@ The new Python `src/` tree currently provides:
 ## Quickstart
 
 Render the Python porting summary:
+=======
+## Quick start
+
+> [!NOTE]
+> **`cargo install clawcode` will not work** — this package is not published on crates.io. Build from source as shown below.
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
 
 ```bash
-python3 -m src.main summary
+# 1. Clone and build
+git clone https://github.com/ultraworkers/claw-code
+cd claw-code/rust
+cargo build --workspace
+
+# 2. Set your API key (Anthropic API key — not a Claude subscription)
+export ANTHROPIC_API_KEY="sk-ant-..."
+
+# 3. Verify everything is wired correctly
+./target/debug/claw doctor
+
+# 4. Run a prompt
+./target/debug/claw prompt "say hello"
 ```
 
-Print the current Python workspace manifest:
+> [!NOTE]
+> **Windows (PowerShell):** the binary is `claw.exe`, not `claw`. Use `.\target\debug\claw.exe` or run `cargo run -- prompt "say hello"` to skip the path lookup.
+
+> [!NOTE]
+> **Auth:** claw requires an **API key** (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, etc.) — Claude subscription login is not a supported auth path.
+
+Run the workspace test suite:
 
 ```bash
-python3 -m src.main manifest
+cd rust
+cargo test --workspace
 ```
 
-List the current Python modules:
+## Documentation map
 
-```bash
-python3 -m src.main subsystems --limit 16
-```
+- [`USAGE.md`](./USAGE.md) — quick commands, auth, sessions, config, parity harness
+- [`rust/README.md`](./rust/README.md) — crate map, CLI surface, features, workspace layout
+- [`PARITY.md`](./PARITY.md) — parity status for the Rust port
+- [`rust/MOCK_PARITY_HARNESS.md`](./rust/MOCK_PARITY_HARNESS.md) — deterministic mock-service harness details
+- [`ROADMAP.md`](./ROADMAP.md) — active roadmap and open cleanup work
+- [`PHILOSOPHY.md`](./PHILOSOPHY.md) — why the project exists and how it is operated
 
-Run verification:
+## Ecosystem
 
-```bash
-python3 -m unittest discover -s tests -v
-```
+Claw Code is built in the open alongside the broader UltraWorkers toolchain:
 
-Run the parity audit against the local ignored archive (when present):
+- [clawhip](https://github.com/Yeachan-Heo/clawhip)
+- [oh-my-openagent](https://github.com/code-yeongyu/oh-my-openagent)
+- [oh-my-claudecode](https://github.com/Yeachan-Heo/oh-my-claudecode)
+- [oh-my-codex](https://github.com/Yeachan-Heo/oh-my-codex)
+- [UltraWorkers Discord](https://discord.gg/5TUQKqFWd)
 
+<<<<<<< HEAD
 ```bash
 python3 -m src.main parity-audit
 ```
@@ -223,6 +275,9 @@ Join the [**instructkr Discord**](https://instruct.kr/) — the best Korean lang
 See the chart at the top of this README.
 
 ## Ownership / Affiliation Disclaimer
+=======
+## Ownership / affiliation disclaimer
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
 
 - This repository does **not** claim ownership of the original Claw Code source material.
 - This repository is **not affiliated with, endorsed by, or maintained by the original authors**.

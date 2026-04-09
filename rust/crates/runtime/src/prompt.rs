@@ -4,8 +4,13 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use crate::config::{ConfigError, ConfigLoader, RuntimeConfig};
+<<<<<<< HEAD
 use lsp::LspContextEnrichment;
+=======
+use crate::git_context::GitContext;
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
 
+/// Errors raised while assembling the final system prompt.
 #[derive(Debug)]
 pub enum PromptBuildError {
     Io(std::io::Error),
@@ -35,23 +40,35 @@ impl From<ConfigError> for PromptBuildError {
     }
 }
 
+/// Marker separating static prompt scaffolding from dynamic runtime context.
 pub const SYSTEM_PROMPT_DYNAMIC_BOUNDARY: &str = "__SYSTEM_PROMPT_DYNAMIC_BOUNDARY__";
+<<<<<<< HEAD
 pub const FRONTIER_MODEL_NAME: &str = "Opus 4.6";
+=======
+/// Human-readable default frontier model name embedded into generated prompts.
+pub const FRONTIER_MODEL_NAME: &str = "Claude Opus 4.6";
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
 const MAX_INSTRUCTION_FILE_CHARS: usize = 4_000;
 const MAX_TOTAL_INSTRUCTION_CHARS: usize = 12_000;
 
+/// Contents of an instruction file included in prompt construction.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ContextFile {
     pub path: PathBuf,
     pub content: String,
 }
 
+/// Project-local context injected into the rendered system prompt.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct ProjectContext {
     pub cwd: PathBuf,
     pub current_date: String,
     pub git_status: Option<String>,
     pub git_diff: Option<String>,
+<<<<<<< HEAD
+=======
+    pub git_context: Option<GitContext>,
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
     pub instruction_files: Vec<ContextFile>,
 }
 
@@ -67,6 +84,10 @@ impl ProjectContext {
             current_date: current_date.into(),
             git_status: None,
             git_diff: None,
+<<<<<<< HEAD
+=======
+            git_context: None,
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
             instruction_files,
         })
     }
@@ -78,10 +99,15 @@ impl ProjectContext {
         let mut context = Self::discover(cwd, current_date)?;
         context.git_status = read_git_status(&context.cwd);
         context.git_diff = read_git_diff(&context.cwd);
+<<<<<<< HEAD
+=======
+        context.git_context = GitContext::detect(&context.cwd);
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
         Ok(context)
     }
 }
 
+/// Builder for the runtime system prompt and dynamic environment sections.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct SystemPromptBuilder {
     output_style_name: Option<String>,
@@ -194,6 +220,7 @@ impl SystemPromptBuilder {
     }
 }
 
+/// Formats each item as an indented bullet for prompt sections.
 #[must_use]
 pub fn prepend_bullets(items: Vec<String>) -> Vec<String> {
     items.into_iter().map(|item| format!(" - {item}")).collect()
@@ -211,9 +238,15 @@ fn discover_instruction_files(cwd: &Path) -> std::io::Result<Vec<ContextFile>> {
     let mut files = Vec::new();
     for dir in directories {
         for candidate in [
+<<<<<<< HEAD
             dir.join("CLAW.md"),
             dir.join("CLAW.local.md"),
             dir.join(".claw").join("CLAW.md"),
+=======
+            dir.join("CLAUDE.md"),
+            dir.join("CLAUDE.local.md"),
+            dir.join(".claw").join("CLAUDE.md"),
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
             dir.join(".claw").join("instructions.md"),
         ] {
             push_context_file(&mut files, candidate)?;
@@ -302,11 +335,33 @@ fn render_project_context(project_context: &ProjectContext) -> String {
         lines.push("Git status snapshot:".to_string());
         lines.push(status.clone());
     }
+<<<<<<< HEAD
+=======
+    if let Some(ref gc) = project_context.git_context {
+        if !gc.recent_commits.is_empty() {
+            lines.push(String::new());
+            lines.push("Recent commits (last 5):".to_string());
+            for c in &gc.recent_commits {
+                lines.push(format!("  {} {}", c.hash, c.subject));
+            }
+        }
+    }
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
     if let Some(diff) = &project_context.git_diff {
         lines.push(String::new());
         lines.push("Git diff snapshot:".to_string());
         lines.push(diff.clone());
     }
+<<<<<<< HEAD
+=======
+    if let Some(git_context) = &project_context.git_context {
+        let rendered = git_context.render();
+        if !rendered.is_empty() {
+            lines.push(String::new());
+            lines.push(rendered);
+        }
+    }
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
     lines.join("\n")
 }
 
@@ -411,6 +466,7 @@ fn collapse_blank_lines(content: &str) -> String {
     result
 }
 
+/// Loads config and project context, then renders the system prompt text.
 pub fn load_system_prompt(
     cwd: impl Into<PathBuf>,
     current_date: impl Into<String>,
@@ -523,11 +579,22 @@ mod tests {
         crate::test_env_lock()
     }
 
+<<<<<<< HEAD
+=======
+    fn ensure_valid_cwd() {
+        if std::env::current_dir().is_err() {
+            std::env::set_current_dir(env!("CARGO_MANIFEST_DIR"))
+                .expect("test cwd should be recoverable");
+        }
+    }
+
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
     #[test]
     fn discovers_instruction_files_from_ancestor_chain() {
         let root = temp_dir();
         let nested = root.join("apps").join("api");
         fs::create_dir_all(nested.join(".claw")).expect("nested claw dir");
+<<<<<<< HEAD
         fs::write(root.join("CLAW.md"), "root instructions").expect("write root instructions");
         fs::write(root.join("CLAW.local.md"), "local instructions")
             .expect("write local instructions");
@@ -541,6 +608,21 @@ mod tests {
         )
         .expect("write apps dot claw instructions");
         fs::write(nested.join(".claw").join("CLAW.md"), "nested rules")
+=======
+        fs::write(root.join("CLAUDE.md"), "root instructions").expect("write root instructions");
+        fs::write(root.join("CLAUDE.local.md"), "local instructions")
+            .expect("write local instructions");
+        fs::create_dir_all(root.join("apps")).expect("apps dir");
+        fs::create_dir_all(root.join("apps").join(".claw")).expect("apps claw dir");
+        fs::write(root.join("apps").join("CLAUDE.md"), "apps instructions")
+            .expect("write apps instructions");
+        fs::write(
+            root.join("apps").join(".claw").join("instructions.md"),
+            "apps dot claude instructions",
+        )
+        .expect("write apps dot claude instructions");
+        fs::write(nested.join(".claw").join("CLAUDE.md"), "nested rules")
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
             .expect("write nested rules");
         fs::write(
             nested.join(".claw").join("instructions.md"),
@@ -561,7 +643,11 @@ mod tests {
                 "root instructions",
                 "local instructions",
                 "apps instructions",
+<<<<<<< HEAD
                 "apps dot claw instructions",
+=======
+                "apps dot claude instructions",
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
                 "nested rules",
                 "nested instructions"
             ]
@@ -603,14 +689,23 @@ mod tests {
     #[test]
     fn displays_context_paths_compactly() {
         assert_eq!(
+<<<<<<< HEAD
             display_context_path(Path::new("/tmp/project/.claw/CLAW.md")),
             "CLAW.md"
+=======
+            display_context_path(Path::new("/tmp/project/.claw/CLAUDE.md")),
+            "CLAUDE.md"
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
         );
     }
 
     #[test]
     fn discover_with_git_includes_status_snapshot() {
         let _guard = env_lock();
+<<<<<<< HEAD
+=======
+        ensure_valid_cwd();
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
         let root = temp_dir();
         fs::create_dir_all(&root).expect("root dir");
         std::process::Command::new("git")
@@ -629,6 +724,135 @@ mod tests {
         assert!(status.contains("?? CLAW.md"));
         assert!(status.contains("?? tracked.txt"));
         assert!(context.git_diff.is_none());
+<<<<<<< HEAD
+=======
+
+        fs::remove_dir_all(root).expect("cleanup temp dir");
+    }
+
+    #[test]
+    fn discover_with_git_includes_recent_commits_and_renders_them() {
+        // given: a git repo with three commits and a current branch
+        let _guard = env_lock();
+        ensure_valid_cwd();
+        let root = temp_dir();
+        fs::create_dir_all(&root).expect("root dir");
+        std::process::Command::new("git")
+            .args(["init", "--quiet", "-b", "main"])
+            .current_dir(&root)
+            .status()
+            .expect("git init should run");
+        std::process::Command::new("git")
+            .args(["config", "user.email", "tests@example.com"])
+            .current_dir(&root)
+            .status()
+            .expect("git config email should run");
+        std::process::Command::new("git")
+            .args(["config", "user.name", "Runtime Prompt Tests"])
+            .current_dir(&root)
+            .status()
+            .expect("git config name should run");
+        for (file, message) in [
+            ("a.txt", "first commit"),
+            ("b.txt", "second commit"),
+            ("c.txt", "third commit"),
+        ] {
+            fs::write(root.join(file), "x\n").expect("write commit file");
+            std::process::Command::new("git")
+                .args(["add", file])
+                .current_dir(&root)
+                .status()
+                .expect("git add should run");
+            std::process::Command::new("git")
+                .args(["commit", "-m", message, "--quiet"])
+                .current_dir(&root)
+                .status()
+                .expect("git commit should run");
+        }
+        fs::write(root.join("d.txt"), "staged\n").expect("write staged file");
+        std::process::Command::new("git")
+            .args(["add", "d.txt"])
+            .current_dir(&root)
+            .status()
+            .expect("git add staged should run");
+
+        // when: discovering project context with git auto-include
+        let context =
+            ProjectContext::discover_with_git(&root, "2026-03-31").expect("context should load");
+        let rendered = SystemPromptBuilder::new()
+            .with_os("linux", "6.8")
+            .with_project_context(context.clone())
+            .render();
+
+        // then: branch, recent commits and staged files are present in context
+        let gc = context
+            .git_context
+            .as_ref()
+            .expect("git context should be present");
+        let commits: String = gc
+            .recent_commits
+            .iter()
+            .map(|c| c.subject.clone())
+            .collect::<Vec<_>>()
+            .join("\n");
+        assert!(commits.contains("first commit"));
+        assert!(commits.contains("second commit"));
+        assert!(commits.contains("third commit"));
+        assert_eq!(gc.recent_commits.len(), 3);
+
+        let status = context.git_status.as_deref().expect("status snapshot");
+        assert!(status.contains("## main"));
+        assert!(status.contains("A  d.txt"));
+
+        assert!(rendered.contains("Recent commits (last 5):"));
+        assert!(rendered.contains("first commit"));
+        assert!(rendered.contains("Git status snapshot:"));
+        assert!(rendered.contains("## main"));
+
+        fs::remove_dir_all(root).expect("cleanup temp dir");
+    }
+
+    #[test]
+    fn discover_with_git_includes_diff_snapshot_for_tracked_changes() {
+        let _guard = env_lock();
+        ensure_valid_cwd();
+        let root = temp_dir();
+        fs::create_dir_all(&root).expect("root dir");
+        std::process::Command::new("git")
+            .args(["init", "--quiet"])
+            .current_dir(&root)
+            .status()
+            .expect("git init should run");
+        std::process::Command::new("git")
+            .args(["config", "user.email", "tests@example.com"])
+            .current_dir(&root)
+            .status()
+            .expect("git config email should run");
+        std::process::Command::new("git")
+            .args(["config", "user.name", "Runtime Prompt Tests"])
+            .current_dir(&root)
+            .status()
+            .expect("git config name should run");
+        fs::write(root.join("tracked.txt"), "hello\n").expect("write tracked file");
+        std::process::Command::new("git")
+            .args(["add", "tracked.txt"])
+            .current_dir(&root)
+            .status()
+            .expect("git add should run");
+        std::process::Command::new("git")
+            .args(["commit", "-m", "init", "--quiet"])
+            .current_dir(&root)
+            .status()
+            .expect("git commit should run");
+        fs::write(root.join("tracked.txt"), "hello\nworld\n").expect("rewrite tracked file");
+
+        let context =
+            ProjectContext::discover_with_git(&root, "2026-03-31").expect("context should load");
+
+        let diff = context.git_diff.expect("git diff should be present");
+        assert!(diff.contains("Unstaged changes:"));
+        assert!(diff.contains("tracked.txt"));
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
 
         fs::remove_dir_all(root).expect("cleanup temp dir");
     }
@@ -637,6 +861,7 @@ mod tests {
     fn discover_with_git_includes_diff_snapshot_for_tracked_changes() {
         let _guard = env_lock();
         let root = temp_dir();
+<<<<<<< HEAD
         fs::create_dir_all(&root).expect("root dir");
         std::process::Command::new("git")
             .args(["init", "--quiet"])
@@ -681,6 +906,10 @@ mod tests {
         let root = temp_dir();
         fs::create_dir_all(root.join(".claw")).expect("claw dir");
         fs::write(root.join("CLAW.md"), "Project rules").expect("write instructions");
+=======
+        fs::create_dir_all(root.join(".claw")).expect("claw dir");
+        fs::write(root.join("CLAUDE.md"), "Project rules").expect("write instructions");
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
         fs::write(
             root.join(".claw").join("settings.json"),
             r#"{"permissionMode":"acceptEdits"}"#,
@@ -688,6 +917,10 @@ mod tests {
         .expect("write settings");
 
         let _guard = env_lock();
+<<<<<<< HEAD
+=======
+        ensure_valid_cwd();
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
         let previous = std::env::current_dir().expect("cwd");
         let original_home = std::env::var("HOME").ok();
         let original_claw_home = std::env::var("CLAW_CONFIG_HOME").ok();
@@ -722,7 +955,11 @@ mod tests {
     fn renders_claw_code_style_sections_with_project_context() {
         let root = temp_dir();
         fs::create_dir_all(root.join(".claw")).expect("claw dir");
+<<<<<<< HEAD
         fs::write(root.join("CLAW.md"), "Project rules").expect("write CLAW.md");
+=======
+        fs::write(root.join("CLAUDE.md"), "Project rules").expect("write CLAUDE.md");
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
         fs::write(
             root.join(".claw").join("settings.json"),
             r#"{"permissionMode":"acceptEdits"}"#,
@@ -760,7 +997,11 @@ mod tests {
     }
 
     #[test]
+<<<<<<< HEAD
     fn discovers_dot_claw_instructions_markdown() {
+=======
+    fn discovers_dot_claude_instructions_markdown() {
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
         let root = temp_dir();
         let nested = root.join("apps").join("api");
         fs::create_dir_all(nested.join(".claw")).expect("nested claw dir");

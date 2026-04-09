@@ -10,6 +10,10 @@ reqwest = { version = "0.12", default-features = false, features = ["json", "rus
 runtime = { path = "../runtime" }
 serde = { version = "1", features = ["derive"] }
 serde_json.workspace = true
+<<<<<<< HEAD
+=======
+telemetry = { path = "../telemetry" }
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
 tokio = { version = "1", features = ["io-util", "macros", "net", "rt-multi-thread", "time"] }
 
 [lints]

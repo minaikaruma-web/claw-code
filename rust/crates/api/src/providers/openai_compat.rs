@@ -1,10 +1,19 @@
 use std::collections::{BTreeMap, VecDeque};
+<<<<<<< HEAD
 use std::time::Duration;
+=======
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
 
 use serde::Deserialize;
 use serde_json::{json, Value};
 
 use crate::error::ApiError;
+<<<<<<< HEAD
+=======
+use crate::http_client::build_http_client_or_default;
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
 use crate::types::{
     ContentBlockDelta, ContentBlockDeltaEvent, ContentBlockStartEvent, ContentBlockStopEvent,
     InputContentBlock, InputMessage, MessageDelta, MessageDeltaEvent, MessageRequest,
@@ -12,6 +21,7 @@ use crate::types::{
     ToolChoice, ToolDefinition, ToolResultContentBlock, Usage,
 };
 
+<<<<<<< HEAD
 use super::{Provider, ProviderFuture};
 
 pub const DEFAULT_XAI_BASE_URL: &str = "https://api.x.ai/v1";
@@ -21,6 +31,18 @@ const ALT_REQUEST_ID_HEADER: &str = "x-request-id";
 const DEFAULT_INITIAL_BACKOFF: Duration = Duration::from_millis(200);
 const DEFAULT_MAX_BACKOFF: Duration = Duration::from_secs(2);
 const DEFAULT_MAX_RETRIES: u32 = 2;
+=======
+use super::{preflight_message_request, Provider, ProviderFuture};
+
+pub const DEFAULT_XAI_BASE_URL: &str = "https://api.x.ai/v1";
+pub const DEFAULT_OPENAI_BASE_URL: &str = "https://api.openai.com/v1";
+pub const DEFAULT_DASHSCOPE_BASE_URL: &str = "https://dashscope.aliyuncs.com/compatible-mode/v1";
+const REQUEST_ID_HEADER: &str = "request-id";
+const ALT_REQUEST_ID_HEADER: &str = "x-request-id";
+const DEFAULT_INITIAL_BACKOFF: Duration = Duration::from_secs(1);
+const DEFAULT_MAX_BACKOFF: Duration = Duration::from_secs(128);
+const DEFAULT_MAX_RETRIES: u32 = 8;
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct OpenAiCompatConfig {
@@ -32,6 +54,10 @@ pub struct OpenAiCompatConfig {
 
 const XAI_ENV_VARS: &[&str] = &["XAI_API_KEY"];
 const OPENAI_ENV_VARS: &[&str] = &["OPENAI_API_KEY"];
+<<<<<<< HEAD
+=======
+const DASHSCOPE_ENV_VARS: &[&str] = &["DASHSCOPE_API_KEY"];
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
 
 impl OpenAiCompatConfig {
     #[must_use]
@@ -53,11 +79,33 @@ impl OpenAiCompatConfig {
             default_base_url: DEFAULT_OPENAI_BASE_URL,
         }
     }
+<<<<<<< HEAD
+=======
+
+    /// Alibaba DashScope compatible-mode endpoint (Qwen family models).
+    /// Uses the OpenAI-compatible REST shape at /compatible-mode/v1.
+    /// Requested via Discord #clawcode-get-help: native Alibaba API for
+    /// higher rate limits than going through OpenRouter.
+    #[must_use]
+    pub const fn dashscope() -> Self {
+        Self {
+            provider_name: "DashScope",
+            api_key_env: "DASHSCOPE_API_KEY",
+            base_url_env: "DASHSCOPE_BASE_URL",
+            default_base_url: DEFAULT_DASHSCOPE_BASE_URL,
+        }
+    }
+
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
     #[must_use]
     pub fn credential_env_vars(self) -> &'static [&'static str] {
         match self.provider_name {
             "xAI" => XAI_ENV_VARS,
             "OpenAI" => OPENAI_ENV_VARS,
+<<<<<<< HEAD
+=======
+            "DashScope" => DASHSCOPE_ENV_VARS,
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
             _ => &[],
         }
     }
@@ -67,6 +115,10 @@ impl OpenAiCompatConfig {
 pub struct OpenAiCompatClient {
     http: reqwest::Client,
     api_key: String,
+<<<<<<< HEAD
+=======
+    config: OpenAiCompatConfig,
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
     base_url: String,
     max_retries: u32,
     initial_backoff: Duration,
@@ -74,11 +126,28 @@ pub struct OpenAiCompatClient {
 }
 
 impl OpenAiCompatClient {
+<<<<<<< HEAD
     #[must_use]
     pub fn new(api_key: impl Into<String>, config: OpenAiCompatConfig) -> Self {
         Self {
             http: reqwest::Client::new(),
             api_key: api_key.into(),
+=======
+    const fn config(&self) -> OpenAiCompatConfig {
+        self.config
+    }
+
+    #[must_use]
+    pub fn base_url(&self) -> &str {
+        &self.base_url
+    }
+    #[must_use]
+    pub fn new(api_key: impl Into<String>, config: OpenAiCompatConfig) -> Self {
+        Self {
+            http: build_http_client_or_default(),
+            api_key: api_key.into(),
+            config,
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
             base_url: read_base_url(config),
             max_retries: DEFAULT_MAX_RETRIES,
             initial_backoff: DEFAULT_INITIAL_BACKOFF,
@@ -123,9 +192,19 @@ impl OpenAiCompatClient {
             stream: false,
             ..request.clone()
         };
+<<<<<<< HEAD
         let response = self.send_with_retry(&request).await?;
         let request_id = request_id_from_headers(response.headers());
         let payload = response.json::<ChatCompletionResponse>().await?;
+=======
+        preflight_message_request(&request)?;
+        let response = self.send_with_retry(&request).await?;
+        let request_id = request_id_from_headers(response.headers());
+        let body = response.text().await.map_err(ApiError::from)?;
+        let payload = serde_json::from_str::<ChatCompletionResponse>(&body).map_err(|error| {
+            ApiError::json_deserialize(self.config.provider_name, &request.model, &body, error)
+        })?;
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
         let mut normalized = normalize_response(&request.model, payload)?;
         if normalized.request_id.is_none() {
             normalized.request_id = request_id;
@@ -137,13 +216,21 @@ impl OpenAiCompatClient {
         &self,
         request: &MessageRequest,
     ) -> Result<MessageStream, ApiError> {
+<<<<<<< HEAD
+=======
+        preflight_message_request(request)?;
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
         let response = self
             .send_with_retry(&request.clone().with_streaming())
             .await?;
         Ok(MessageStream {
             request_id: request_id_from_headers(response.headers()),
             response,
+<<<<<<< HEAD
             parser: OpenAiSseParser::new(),
+=======
+            parser: OpenAiSseParser::with_context(self.config.provider_name, request.model.clone()),
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
             pending: VecDeque::new(),
             done: false,
             state: StreamState::new(request.model.clone()),
@@ -172,7 +259,11 @@ impl OpenAiCompatClient {
                 break retryable_error;
             }
 
+<<<<<<< HEAD
             tokio::time::sleep(self.backoff_for_attempt(attempts)?).await;
+=======
+            tokio::time::sleep(self.jittered_backoff_for_attempt(attempts)?).await;
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
         };
 
         Err(ApiError::RetriesExhausted {
@@ -190,7 +281,11 @@ impl OpenAiCompatClient {
             .post(&request_url)
             .header("content-type", "application/json")
             .bearer_auth(&self.api_key)
+<<<<<<< HEAD
             .json(&build_chat_completion_request(request))
+=======
+            .json(&build_chat_completion_request(request, self.config()))
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
             .send()
             .await
             .map_err(ApiError::from)
@@ -208,6 +303,42 @@ impl OpenAiCompatClient {
             .checked_mul(multiplier)
             .map_or(self.max_backoff, |delay| delay.min(self.max_backoff)))
     }
+<<<<<<< HEAD
+=======
+
+    fn jittered_backoff_for_attempt(&self, attempt: u32) -> Result<Duration, ApiError> {
+        let base = self.backoff_for_attempt(attempt)?;
+        Ok(base + jitter_for_base(base))
+    }
+}
+
+/// Process-wide counter that guarantees distinct jitter samples even when
+/// the system clock resolution is coarser than consecutive retry sleeps.
+static JITTER_COUNTER: AtomicU64 = AtomicU64::new(0);
+
+/// Returns a random additive jitter in `[0, base]` to decorrelate retries
+/// from multiple concurrent clients. Entropy is drawn from the nanosecond
+/// wall clock mixed with a monotonic counter and run through a splitmix64
+/// finalizer; adequate for retry jitter (no cryptographic requirement).
+fn jitter_for_base(base: Duration) -> Duration {
+    let base_nanos = u64::try_from(base.as_nanos()).unwrap_or(u64::MAX);
+    if base_nanos == 0 {
+        return Duration::ZERO;
+    }
+    let raw_nanos = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|elapsed| u64::try_from(elapsed.as_nanos()).unwrap_or(u64::MAX))
+        .unwrap_or(0);
+    let tick = JITTER_COUNTER.fetch_add(1, Ordering::Relaxed);
+    let mut mixed = raw_nanos
+        .wrapping_add(tick)
+        .wrapping_add(0x9E37_79B9_7F4A_7C15);
+    mixed = (mixed ^ (mixed >> 30)).wrapping_mul(0xBF58_476D_1CE4_E5B9);
+    mixed = (mixed ^ (mixed >> 27)).wrapping_mul(0x94D0_49BB_1331_11EB);
+    mixed ^= mixed >> 31;
+    let jitter_nanos = mixed % base_nanos.saturating_add(1);
+    Duration::from_nanos(jitter_nanos)
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
 }
 
 impl Provider for OpenAiCompatClient {
@@ -275,11 +406,25 @@ impl MessageStream {
 #[derive(Debug, Default)]
 struct OpenAiSseParser {
     buffer: Vec<u8>,
+<<<<<<< HEAD
 }
 
 impl OpenAiSseParser {
     fn new() -> Self {
         Self::default()
+=======
+    provider: String,
+    model: String,
+}
+
+impl OpenAiSseParser {
+    fn with_context(provider: impl Into<String>, model: impl Into<String>) -> Self {
+        Self {
+            buffer: Vec::new(),
+            provider: provider.into(),
+            model: model.into(),
+        }
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
     }
 
     fn push(&mut self, chunk: &[u8]) -> Result<Vec<ChatCompletionChunk>, ApiError> {
@@ -287,7 +432,11 @@ impl OpenAiSseParser {
         let mut events = Vec::new();
 
         while let Some(frame) = next_sse_frame(&mut self.buffer) {
+<<<<<<< HEAD
             if let Some(event) = parse_sse_frame(&frame)? {
+=======
+            if let Some(event) = parse_sse_frame(&frame, &self.provider, &self.model)? {
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
                 events.push(event);
             }
         }
@@ -296,6 +445,10 @@ impl OpenAiSseParser {
     }
 }
 
+<<<<<<< HEAD
+=======
+#[allow(clippy::struct_excessive_bools)]
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
 #[derive(Debug)]
 struct StreamState {
     model: String,
@@ -497,6 +650,10 @@ impl ToolCallState {
         self.openai_index + 1
     }
 
+<<<<<<< HEAD
+=======
+    #[allow(clippy::unnecessary_wraps)]
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
     fn start_event(&self) -> Result<Option<ContentBlockStartEvent>, ApiError> {
         let Some(name) = self.name.clone() else {
             return Ok(None);
@@ -631,7 +788,48 @@ struct ErrorBody {
     message: Option<String>,
 }
 
+<<<<<<< HEAD
 fn build_chat_completion_request(request: &MessageRequest) -> Value {
+=======
+/// Returns true for models known to reject tuning parameters like temperature,
+/// top_p, frequency_penalty, and presence_penalty. These are typically
+/// reasoning/chain-of-thought models with fixed sampling.
+fn is_reasoning_model(model: &str) -> bool {
+    let lowered = model.to_ascii_lowercase();
+    // Strip any provider/ prefix for the check (e.g. qwen/qwen-qwq -> qwen-qwq)
+    let canonical = lowered.rsplit('/').next().unwrap_or(lowered.as_str());
+    // OpenAI reasoning models
+    canonical.starts_with("o1")
+        || canonical.starts_with("o3")
+        || canonical.starts_with("o4")
+        // xAI reasoning: grok-3-mini always uses reasoning mode
+        || canonical == "grok-3-mini"
+        // Alibaba DashScope reasoning variants (QwQ + Qwen3-Thinking family)
+        || canonical.starts_with("qwen-qwq")
+        || canonical.starts_with("qwq")
+        || canonical.contains("thinking")
+}
+
+/// Strip routing prefix (e.g., "openai/gpt-4" → "gpt-4") for the wire.
+/// The prefix is used only to select transport; the backend expects the
+/// bare model id.
+fn strip_routing_prefix(model: &str) -> &str {
+    if let Some(pos) = model.find('/') {
+        let prefix = &model[..pos];
+        // Only strip if the prefix before "/" is a known routing prefix,
+        // not if "/" appears in the middle of the model name for other reasons.
+        if matches!(prefix, "openai" | "xai" | "grok" | "qwen") {
+            &model[pos + 1..]
+        } else {
+            model
+        }
+    } else {
+        model
+    }
+}
+
+fn build_chat_completion_request(request: &MessageRequest, config: OpenAiCompatConfig) -> Value {
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
     let mut messages = Vec::new();
     if let Some(system) = request.system.as_ref().filter(|value| !value.is_empty()) {
         messages.push(json!({
@@ -643,13 +841,38 @@ fn build_chat_completion_request(request: &MessageRequest) -> Value {
         messages.extend(translate_message(message));
     }
 
+<<<<<<< HEAD
     let mut payload = json!({
         "model": request.model,
         "max_tokens": request.max_tokens,
+=======
+    // Strip routing prefix (e.g., "openai/gpt-4" → "gpt-4") for the wire.
+    let wire_model = strip_routing_prefix(&request.model);
+
+    // gpt-5* requires `max_completion_tokens`; older OpenAI models accept both.
+    // We send the correct field based on the wire model name so gpt-5.x requests
+    // don't fail with "unknown field max_tokens".
+    let max_tokens_key = if wire_model.starts_with("gpt-5") {
+        "max_completion_tokens"
+    } else {
+        "max_tokens"
+    };
+
+    let mut payload = json!({
+        "model": wire_model,
+        max_tokens_key: request.max_tokens,
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
         "messages": messages,
         "stream": request.stream,
     });
 
+<<<<<<< HEAD
+=======
+    if request.stream && should_request_stream_usage(config) {
+        payload["stream_options"] = json!({ "include_usage": true });
+    }
+
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
     if let Some(tools) = &request.tools {
         payload["tools"] =
             Value::Array(tools.iter().map(openai_tool_definition).collect::<Vec<_>>());
@@ -658,6 +881,37 @@ fn build_chat_completion_request(request: &MessageRequest) -> Value {
         payload["tool_choice"] = openai_tool_choice(tool_choice);
     }
 
+<<<<<<< HEAD
+=======
+    // OpenAI-compatible tuning parameters — only included when explicitly set.
+    // Reasoning models (o1/o3/o4/grok-3-mini) reject these params with 400;
+    // silently strip them to avoid cryptic provider errors.
+    if !is_reasoning_model(&request.model) {
+        if let Some(temperature) = request.temperature {
+            payload["temperature"] = json!(temperature);
+        }
+        if let Some(top_p) = request.top_p {
+            payload["top_p"] = json!(top_p);
+        }
+        if let Some(frequency_penalty) = request.frequency_penalty {
+            payload["frequency_penalty"] = json!(frequency_penalty);
+        }
+        if let Some(presence_penalty) = request.presence_penalty {
+            payload["presence_penalty"] = json!(presence_penalty);
+        }
+    }
+    // stop is generally safe for all providers
+    if let Some(stop) = &request.stop {
+        if !stop.is_empty() {
+            payload["stop"] = json!(stop);
+        }
+    }
+    // reasoning_effort for OpenAI-compatible reasoning models (o4-mini, o3, etc.)
+    if let Some(effort) = &request.reasoning_effort {
+        payload["reasoning_effort"] = json!(effort);
+    }
+
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
     payload
 }
 
@@ -725,13 +979,53 @@ fn flatten_tool_result_content(content: &[ToolResultContentBlock]) -> String {
         .join("\n")
 }
 
+<<<<<<< HEAD
 fn openai_tool_definition(tool: &ToolDefinition) -> Value {
+=======
+/// Recursively ensure every object-type node in a JSON Schema has
+/// `"properties"` (at least `{}`) and `"additionalProperties": false`.
+/// The OpenAI `/responses` endpoint validates schemas strictly and rejects
+/// objects that omit these fields; `/chat/completions` is lenient but also
+/// accepts them, so we normalise unconditionally.
+fn normalize_object_schema(schema: &mut Value) {
+    if let Some(obj) = schema.as_object_mut() {
+        if obj.get("type").and_then(Value::as_str) == Some("object") {
+            obj.entry("properties").or_insert_with(|| json!({}));
+            obj.entry("additionalProperties")
+                .or_insert(Value::Bool(false));
+        }
+        // Recurse into properties values
+        if let Some(props) = obj.get_mut("properties") {
+            if let Some(props_obj) = props.as_object_mut() {
+                let keys: Vec<String> = props_obj.keys().cloned().collect();
+                for k in keys {
+                    if let Some(v) = props_obj.get_mut(&k) {
+                        normalize_object_schema(v);
+                    }
+                }
+            }
+        }
+        // Recurse into items (arrays)
+        if let Some(items) = obj.get_mut("items") {
+            normalize_object_schema(items);
+        }
+    }
+}
+
+fn openai_tool_definition(tool: &ToolDefinition) -> Value {
+    let mut parameters = tool.input_schema.clone();
+    normalize_object_schema(&mut parameters);
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
     json!({
         "type": "function",
         "function": {
             "name": tool.name,
             "description": tool.description,
+<<<<<<< HEAD
             "parameters": tool.input_schema,
+=======
+            "parameters": parameters,
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
         }
     })
 }
@@ -747,6 +1041,13 @@ fn openai_tool_choice(tool_choice: &ToolChoice) -> Value {
     }
 }
 
+<<<<<<< HEAD
+=======
+fn should_request_stream_usage(config: OpenAiCompatConfig) -> bool {
+    matches!(config.provider_name, "OpenAI")
+}
+
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
 fn normalize_response(
     model: &str,
     response: ChatCompletionResponse,
@@ -818,7 +1119,15 @@ fn next_sse_frame(buffer: &mut Vec<u8>) -> Option<String> {
     Some(String::from_utf8_lossy(&frame[..frame_len]).into_owned())
 }
 
+<<<<<<< HEAD
 fn parse_sse_frame(frame: &str) -> Result<Option<ChatCompletionChunk>, ApiError> {
+=======
+fn parse_sse_frame(
+    frame: &str,
+    provider: &str,
+    model: &str,
+) -> Result<Option<ChatCompletionChunk>, ApiError> {
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
     let trimmed = frame.trim();
     if trimmed.is_empty() {
         return Ok(None);
@@ -840,15 +1149,25 @@ fn parse_sse_frame(frame: &str) -> Result<Option<ChatCompletionChunk>, ApiError>
     if payload == "[DONE]" {
         return Ok(None);
     }
+<<<<<<< HEAD
     serde_json::from_str(&payload)
         .map(Some)
         .map_err(ApiError::from)
+=======
+    serde_json::from_str::<ChatCompletionChunk>(&payload)
+        .map(Some)
+        .map_err(|error| ApiError::json_deserialize(provider, model, &payload, error))
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
 }
 
 fn read_env_non_empty(key: &str) -> Result<Option<String>, ApiError> {
     match std::env::var(key) {
         Ok(value) if !value.is_empty() => Ok(Some(value)),
+<<<<<<< HEAD
         Ok(_) | Err(std::env::VarError::NotPresent) => Ok(None),
+=======
+        Ok(_) | Err(std::env::VarError::NotPresent) => Ok(super::dotenv_value(key)),
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
         Err(error) => Err(ApiError::from(error)),
     }
 }
@@ -889,6 +1208,10 @@ async fn expect_success(response: reqwest::Response) -> Result<reqwest::Response
         return Ok(response);
     }
 
+<<<<<<< HEAD
+=======
+    let request_id = request_id_from_headers(response.headers());
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
     let body = response.text().await.unwrap_or_default();
     let parsed_error = serde_json::from_str::<ErrorEnvelope>(&body).ok();
     let retryable = is_retryable_status(status);
@@ -901,6 +1224,10 @@ async fn expect_success(response: reqwest::Response) -> Result<reqwest::Response
         message: parsed_error
             .as_ref()
             .and_then(|error| error.error.message.clone()),
+<<<<<<< HEAD
+=======
+        request_id,
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
         body,
         retryable,
     })
@@ -936,8 +1263,14 @@ impl StringExt for String {
 #[cfg(test)]
 mod tests {
     use super::{
+<<<<<<< HEAD
         build_chat_completion_request, chat_completions_endpoint, normalize_finish_reason,
         openai_tool_choice, parse_tool_arguments, OpenAiCompatClient, OpenAiCompatConfig,
+=======
+        build_chat_completion_request, chat_completions_endpoint, is_reasoning_model,
+        normalize_finish_reason, openai_tool_choice, parse_tool_arguments, OpenAiCompatClient,
+        OpenAiCompatConfig,
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
     };
     use crate::error::ApiError;
     use crate::types::{
@@ -949,6 +1282,7 @@ mod tests {
 
     #[test]
     fn request_translation_uses_openai_compatible_shape() {
+<<<<<<< HEAD
         let payload = build_chat_completion_request(&MessageRequest {
             model: "grok-3".to_string(),
             max_tokens: 64,
@@ -976,6 +1310,39 @@ mod tests {
             tool_choice: Some(ToolChoice::Auto),
             stream: false,
         });
+=======
+        let payload = build_chat_completion_request(
+            &MessageRequest {
+                model: "grok-3".to_string(),
+                max_tokens: 64,
+                messages: vec![InputMessage {
+                    role: "user".to_string(),
+                    content: vec![
+                        InputContentBlock::Text {
+                            text: "hello".to_string(),
+                        },
+                        InputContentBlock::ToolResult {
+                            tool_use_id: "tool_1".to_string(),
+                            content: vec![ToolResultContentBlock::Json {
+                                value: json!({"ok": true}),
+                            }],
+                            is_error: false,
+                        },
+                    ],
+                }],
+                system: Some("be helpful".to_string()),
+                tools: Some(vec![ToolDefinition {
+                    name: "weather".to_string(),
+                    description: Some("Get weather".to_string()),
+                    input_schema: json!({"type": "object"}),
+                }]),
+                tool_choice: Some(ToolChoice::Auto),
+                stream: false,
+                ..Default::default()
+            },
+            OpenAiCompatConfig::xai(),
+        );
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
 
         assert_eq!(payload["messages"][0]["role"], json!("system"));
         assert_eq!(payload["messages"][1]["role"], json!("user"));
@@ -985,6 +1352,117 @@ mod tests {
     }
 
     #[test]
+<<<<<<< HEAD
+=======
+    fn tool_schema_object_gets_strict_fields_for_responses_endpoint() {
+        // OpenAI /responses endpoint rejects object schemas missing
+        // "properties" and "additionalProperties". Verify normalize_object_schema
+        // fills them in so the request shape is strict-validator-safe.
+        use super::normalize_object_schema;
+
+        // Bare object — no properties at all
+        let mut schema = json!({"type": "object"});
+        normalize_object_schema(&mut schema);
+        assert_eq!(schema["properties"], json!({}));
+        assert_eq!(schema["additionalProperties"], json!(false));
+
+        // Nested object inside properties
+        let mut schema2 = json!({
+            "type": "object",
+            "properties": {
+                "location": {"type": "object", "properties": {"lat": {"type": "number"}}}
+            }
+        });
+        normalize_object_schema(&mut schema2);
+        assert_eq!(schema2["additionalProperties"], json!(false));
+        assert_eq!(
+            schema2["properties"]["location"]["additionalProperties"],
+            json!(false)
+        );
+
+        // Existing properties/additionalProperties should not be overwritten
+        let mut schema3 = json!({
+            "type": "object",
+            "properties": {"x": {"type": "string"}},
+            "additionalProperties": true
+        });
+        normalize_object_schema(&mut schema3);
+        assert_eq!(
+            schema3["additionalProperties"],
+            json!(true),
+            "must not overwrite existing"
+        );
+    }
+
+    #[test]
+    fn reasoning_effort_is_included_when_set() {
+        let payload = build_chat_completion_request(
+            &MessageRequest {
+                model: "o4-mini".to_string(),
+                max_tokens: 1024,
+                messages: vec![InputMessage::user_text("think hard")],
+                reasoning_effort: Some("high".to_string()),
+                ..Default::default()
+            },
+            OpenAiCompatConfig::openai(),
+        );
+        assert_eq!(payload["reasoning_effort"], json!("high"));
+    }
+
+    #[test]
+    fn reasoning_effort_omitted_when_not_set() {
+        let payload = build_chat_completion_request(
+            &MessageRequest {
+                model: "gpt-4o".to_string(),
+                max_tokens: 64,
+                messages: vec![InputMessage::user_text("hello")],
+                ..Default::default()
+            },
+            OpenAiCompatConfig::openai(),
+        );
+        assert!(payload.get("reasoning_effort").is_none());
+    }
+
+    #[test]
+    fn openai_streaming_requests_include_usage_opt_in() {
+        let payload = build_chat_completion_request(
+            &MessageRequest {
+                model: "gpt-5".to_string(),
+                max_tokens: 64,
+                messages: vec![InputMessage::user_text("hello")],
+                system: None,
+                tools: None,
+                tool_choice: None,
+                stream: true,
+                ..Default::default()
+            },
+            OpenAiCompatConfig::openai(),
+        );
+
+        assert_eq!(payload["stream_options"], json!({"include_usage": true}));
+    }
+
+    #[test]
+    fn xai_streaming_requests_skip_openai_specific_usage_opt_in() {
+        let payload = build_chat_completion_request(
+            &MessageRequest {
+                model: "grok-3".to_string(),
+                max_tokens: 64,
+                messages: vec![InputMessage::user_text("hello")],
+                system: None,
+                tools: None,
+                tool_choice: None,
+                stream: true,
+                ..Default::default()
+            },
+            OpenAiCompatConfig::xai(),
+        );
+
+        assert!(payload.get("stream_options").is_none());
+    }
+
+    #[test]
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
     fn tool_choice_translation_supports_required_function() {
         assert_eq!(openai_tool_choice(&ToolChoice::Any), json!("required"));
         assert_eq!(
@@ -1047,4 +1525,149 @@ mod tests {
         assert_eq!(normalize_finish_reason("stop"), "end_turn");
         assert_eq!(normalize_finish_reason("tool_calls"), "tool_use");
     }
+<<<<<<< HEAD
+=======
+
+    #[test]
+    fn tuning_params_included_in_payload_when_set() {
+        let request = MessageRequest {
+            model: "gpt-4o".to_string(),
+            max_tokens: 1024,
+            messages: vec![],
+            system: None,
+            tools: None,
+            tool_choice: None,
+            stream: false,
+            temperature: Some(0.7),
+            top_p: Some(0.9),
+            frequency_penalty: Some(0.5),
+            presence_penalty: Some(0.3),
+            stop: Some(vec!["\n".to_string()]),
+            reasoning_effort: None,
+        };
+        let payload = build_chat_completion_request(&request, OpenAiCompatConfig::openai());
+        assert_eq!(payload["temperature"], 0.7);
+        assert_eq!(payload["top_p"], 0.9);
+        assert_eq!(payload["frequency_penalty"], 0.5);
+        assert_eq!(payload["presence_penalty"], 0.3);
+        assert_eq!(payload["stop"], json!(["\n"]));
+    }
+
+    #[test]
+    fn reasoning_model_strips_tuning_params() {
+        let request = MessageRequest {
+            model: "o1-mini".to_string(),
+            max_tokens: 1024,
+            messages: vec![],
+            stream: false,
+            temperature: Some(0.7),
+            top_p: Some(0.9),
+            frequency_penalty: Some(0.5),
+            presence_penalty: Some(0.3),
+            stop: Some(vec!["\n".to_string()]),
+            ..Default::default()
+        };
+        let payload = build_chat_completion_request(&request, OpenAiCompatConfig::openai());
+        assert!(
+            payload.get("temperature").is_none(),
+            "reasoning model should strip temperature"
+        );
+        assert!(
+            payload.get("top_p").is_none(),
+            "reasoning model should strip top_p"
+        );
+        assert!(payload.get("frequency_penalty").is_none());
+        assert!(payload.get("presence_penalty").is_none());
+        // stop is safe for all providers
+        assert_eq!(payload["stop"], json!(["\n"]));
+    }
+
+    #[test]
+    fn grok_3_mini_is_reasoning_model() {
+        assert!(is_reasoning_model("grok-3-mini"));
+        assert!(is_reasoning_model("o1"));
+        assert!(is_reasoning_model("o1-mini"));
+        assert!(is_reasoning_model("o3-mini"));
+        assert!(!is_reasoning_model("gpt-4o"));
+        assert!(!is_reasoning_model("grok-3"));
+        assert!(!is_reasoning_model("claude-sonnet-4-6"));
+    }
+
+    #[test]
+    fn qwen_reasoning_variants_are_detected() {
+        // QwQ reasoning model
+        assert!(is_reasoning_model("qwen-qwq-32b"));
+        assert!(is_reasoning_model("qwen/qwen-qwq-32b"));
+        // Qwen3 thinking family
+        assert!(is_reasoning_model("qwen3-30b-a3b-thinking"));
+        assert!(is_reasoning_model("qwen/qwen3-30b-a3b-thinking"));
+        // Bare qwq
+        assert!(is_reasoning_model("qwq-plus"));
+        // Regular Qwen models must NOT be classified as reasoning
+        assert!(!is_reasoning_model("qwen-max"));
+        assert!(!is_reasoning_model("qwen/qwen-plus"));
+        assert!(!is_reasoning_model("qwen-turbo"));
+    }
+
+    #[test]
+    fn tuning_params_omitted_from_payload_when_none() {
+        let request = MessageRequest {
+            model: "gpt-4o".to_string(),
+            max_tokens: 1024,
+            messages: vec![],
+            stream: false,
+            ..Default::default()
+        };
+        let payload = build_chat_completion_request(&request, OpenAiCompatConfig::openai());
+        assert!(
+            payload.get("temperature").is_none(),
+            "temperature should be absent"
+        );
+        assert!(payload.get("top_p").is_none(), "top_p should be absent");
+        assert!(payload.get("frequency_penalty").is_none());
+        assert!(payload.get("presence_penalty").is_none());
+        assert!(payload.get("stop").is_none());
+    }
+
+    #[test]
+    fn gpt5_uses_max_completion_tokens_not_max_tokens() {
+        // gpt-5* models require `max_completion_tokens`; legacy `max_tokens` causes
+        // a request-validation failure. Verify the correct key is emitted.
+        let request = MessageRequest {
+            model: "gpt-5.2".to_string(),
+            max_tokens: 512,
+            messages: vec![],
+            stream: false,
+            ..Default::default()
+        };
+        let payload = build_chat_completion_request(&request, OpenAiCompatConfig::openai());
+        assert_eq!(
+            payload["max_completion_tokens"],
+            json!(512),
+            "gpt-5.2 should emit max_completion_tokens"
+        );
+        assert!(
+            payload.get("max_tokens").is_none(),
+            "gpt-5.2 must not emit max_tokens"
+        );
+    }
+
+    #[test]
+    fn non_gpt5_uses_max_tokens() {
+        // Older OpenAI models expect `max_tokens`; verify gpt-4o is unaffected.
+        let request = MessageRequest {
+            model: "gpt-4o".to_string(),
+            max_tokens: 512,
+            messages: vec![],
+            stream: false,
+            ..Default::default()
+        };
+        let payload = build_chat_completion_request(&request, OpenAiCompatConfig::openai());
+        assert_eq!(payload["max_tokens"], json!(512));
+        assert!(
+            payload.get("max_completion_tokens").is_none(),
+            "gpt-4o must not emit max_completion_tokens"
+        );
+    }
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
 }

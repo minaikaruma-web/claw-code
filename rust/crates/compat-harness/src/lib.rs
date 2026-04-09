@@ -71,6 +71,10 @@ fn upstream_repo_candidates(primary_repo_root: &Path) -> Vec<PathBuf> {
 
     for ancestor in primary_repo_root.ancestors().take(4) {
         candidates.push(ancestor.join("claw-code"));
+<<<<<<< HEAD
+=======
+        candidates.push(ancestor.join("clawd-code"));
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
     }
 
     candidates.push(primary_repo_root.join("reference-source").join("claw-code"));

@@ -9,7 +9,10 @@ license = "MIT"
 publish = false
 
 [workspace.dependencies]
+<<<<<<< HEAD
 lsp-types = "0.97"
+=======
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
 serde_json = "1"
 
 [workspace.lints.rust]

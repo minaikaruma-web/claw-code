@@ -25,6 +25,7 @@ dependencies = [
  "runtime",
  "serde",
  "serde_json",
+ "telemetry",
  "tokio",
 ]
 
@@ -179,6 +180,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "613afe47fcd5fac7ccf1db93babcb082c5994d996f20b8b159f2ad1658eb5724"
 
 [[package]]
+<<<<<<< HEAD
 name = "claw-cli"
 version = "0.1.0"
 dependencies = [
@@ -197,6 +199,8 @@ dependencies = [
 ]
 
 [[package]]
+=======
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
 name = "clipboard-win"
 version = "5.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -342,7 +346,11 @@ checksum = "0ce92ff622d6dadf7349484f42c93271a0d49b7cc4d466a936405bacbe10aa78"
 dependencies = [
  "cfg-if",
  "rustix 1.1.4",
+<<<<<<< HEAD
  "windows-sys 0.59.0",
+=======
+ "windows-sys 0.52.0",
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
 ]
 
 [[package]]
@@ -881,6 +889,18 @@ dependencies = [
 ]
 
 [[package]]
+<<<<<<< HEAD
+=======
+name = "mock-anthropic-service"
+version = "0.1.0"
+dependencies = [
+ "api",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
 name = "nibble_vec"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -895,7 +915,11 @@ version = "0.29.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "71e2746dc3a24dd78b3cfcb7be93368c6de9963d30f43a6a73998a9cf4b17b46"
 dependencies = [
+<<<<<<< HEAD
  "bitflags 2.11.0",
+=======
+ "bitflags",
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
  "cfg-if",
  "cfg_aliases",
  "libc",
@@ -1266,12 +1290,16 @@ name = "runtime"
 version = "0.1.0"
 dependencies = [
  "glob",
+<<<<<<< HEAD
  "lsp",
+=======
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
  "plugins",
  "regex",
  "serde",
  "serde_json",
  "sha2",
+ "telemetry",
  "tokio",
  "walkdir",
 ]
@@ -1292,6 +1320,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys 0.4.15",
+<<<<<<< HEAD
  "windows-sys 0.59.0",
 ]
 
@@ -1302,6 +1331,22 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b6fe4565b9518b83ef4f91bb47ce29620ca828bd32cb7e408f0062e9930ba190"
 dependencies = [
  "bitflags 2.11.0",
+ "errno",
+ "libc",
+ "linux-raw-sys 0.12.1",
+ "windows-sys 0.61.2",
+=======
+ "windows-sys 0.52.0",
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
+]
+
+[[package]]
+name = "rustix"
+version = "1.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b6fe4565b9518b83ef4f91bb47ce29620ca828bd32cb7e408f0062e9930ba190"
+dependencies = [
+ "bitflags",
  "errno",
  "libc",
  "linux-raw-sys 0.12.1",
@@ -1355,7 +1400,46 @@ version = "15.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2ee1e066dc922e513bda599c6ccb5f3bb2b0ea5870a579448f2622993f0a9a2f"
 dependencies = [
+<<<<<<< HEAD
  "bitflags 2.11.0",
+ "cfg-if",
+ "clipboard-win",
+ "fd-lock",
+ "home",
+ "libc",
+ "log",
+ "memchr",
+ "nix",
+ "radix_trie",
+ "unicode-segmentation",
+ "unicode-width",
+ "utf8parse",
+ "windows-sys 0.59.0",
+=======
+ "api",
+ "commands",
+ "compat-harness",
+ "crossterm",
+ "mock-anthropic-service",
+ "plugins",
+ "pulldown-cmark",
+ "runtime",
+ "rustyline",
+ "serde",
+ "serde_json",
+ "syntect",
+ "tokio",
+ "tools",
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
+]
+
+[[package]]
+name = "rustyline"
+version = "15.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2ee1e066dc922e513bda599c6ccb5f3bb2b0ea5870a579448f2622993f0a9a2f"
+dependencies = [
+ "bitflags",
  "cfg-if",
  "clipboard-win",
  "fd-lock",
@@ -1623,6 +1707,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "telemetry"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "thiserror"
 version = "2.0.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1753,6 +1845,11 @@ name = "tools"
 version = "0.1.0"
 dependencies = [
  "api",
+<<<<<<< HEAD
+=======
+ "commands",
+ "flate2",
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
  "plugins",
  "reqwest",
  "runtime",

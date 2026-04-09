@@ -7,6 +7,11 @@ publish.workspace = true
 
 [dependencies]
 api = { path = "../api" }
+<<<<<<< HEAD
+=======
+commands = { path = "../commands" }
+flate2 = "1"
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
 plugins = { path = "../plugins" }
 runtime = { path = "../runtime" }
 reqwest = { version = "0.12", default-features = false, features = ["blocking", "rustls-tls"] }

@@ -5,6 +5,10 @@ const COMPACT_CONTINUATION_PREAMBLE: &str =
 const COMPACT_RECENT_MESSAGES_NOTE: &str = "Recent messages are preserved verbatim.";
 const COMPACT_DIRECT_RESUME_INSTRUCTION: &str = "Continue the conversation from where it left off without asking the user any further questions. Resume directly — do not acknowledge the summary, do not recap what was happening, and do not preface with continuation text.";
 
+<<<<<<< HEAD
+=======
+/// Thresholds controlling when and how a session is compacted.
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CompactionConfig {
     pub preserve_recent_messages: usize,
@@ -20,6 +24,7 @@ impl Default for CompactionConfig {
     }
 }
 
+/// Result of compacting a session into a summary plus preserved tail messages.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CompactionResult {
     pub summary: String,
@@ -28,11 +33,13 @@ pub struct CompactionResult {
     pub removed_message_count: usize,
 }
 
+/// Roughly estimates the token footprint of the current session transcript.
 #[must_use]
 pub fn estimate_session_tokens(session: &Session) -> usize {
     session.messages.iter().map(estimate_message_tokens).sum()
 }
 
+/// Returns `true` when the session exceeds the configured compaction budget.
 #[must_use]
 pub fn should_compact(session: &Session, config: CompactionConfig) -> bool {
     let start = compacted_summary_prefix_len(session);
@@ -46,6 +53,7 @@ pub fn should_compact(session: &Session, config: CompactionConfig) -> bool {
             >= config.max_estimated_tokens
 }
 
+/// Normalizes a compaction summary into user-facing continuation text.
 #[must_use]
 pub fn format_compact_summary(summary: &str) -> String {
     let without_analysis = strip_tag_block(summary, "analysis");
@@ -61,6 +69,7 @@ pub fn format_compact_summary(summary: &str) -> String {
     collapse_blank_lines(&formatted).trim().to_string()
 }
 
+/// Builds the synthetic system message used after session compaction.
 #[must_use]
 pub fn get_compact_continuation_message(
     summary: &str,
@@ -85,6 +94,7 @@ pub fn get_compact_continuation_message(
     base
 }
 
+/// Compacts a session by summarizing older messages and preserving the recent tail.
 #[must_use]
 pub fn compact_session(session: &Session, config: CompactionConfig) -> CompactionResult {
     if !should_compact(session, config) {
@@ -119,13 +129,14 @@ pub fn compact_session(session: &Session, config: CompactionConfig) -> Compactio
     }];
     compacted_messages.extend(preserved);
 
+    let mut compacted_session = session.clone();
+    compacted_session.messages = compacted_messages;
+    compacted_session.record_compaction(summary.clone(), removed.len());
+
     CompactionResult {
         summary,
         formatted_summary,
-        compacted_session: Session {
-            version: session.version,
-            messages: compacted_messages,
-        },
+        compacted_session,
         removed_message_count: removed.len(),
     }
 }
@@ -515,10 +526,8 @@ mod tests {
 
     #[test]
     fn leaves_small_sessions_unchanged() {
-        let session = Session {
-            version: 1,
-            messages: vec![ConversationMessage::user_text("hello")],
-        };
+        let mut session = Session::new();
+        session.messages = vec![ConversationMessage::user_text("hello")];
 
         let result = compact_session(&session, CompactionConfig::default());
         assert_eq!(result.removed_message_count, 0);
@@ -529,23 +538,21 @@ mod tests {
 
     #[test]
     fn compacts_older_messages_into_a_system_summary() {
-        let session = Session {
-            version: 1,
-            messages: vec![
-                ConversationMessage::user_text("one ".repeat(200)),
-                ConversationMessage::assistant(vec![ContentBlock::Text {
-                    text: "two ".repeat(200),
-                }]),
-                ConversationMessage::tool_result("1", "bash", "ok ".repeat(200), false),
-                ConversationMessage {
-                    role: MessageRole::Assistant,
-                    blocks: vec![ContentBlock::Text {
-                        text: "recent".to_string(),
-                    }],
-                    usage: None,
-                },
-            ],
-        };
+        let mut session = Session::new();
+        session.messages = vec![
+            ConversationMessage::user_text("one ".repeat(200)),
+            ConversationMessage::assistant(vec![ContentBlock::Text {
+                text: "two ".repeat(200),
+            }]),
+            ConversationMessage::tool_result("1", "bash", "ok ".repeat(200), false),
+            ConversationMessage {
+                role: MessageRole::Assistant,
+                blocks: vec![ContentBlock::Text {
+                    text: "recent".to_string(),
+                }],
+                usage: None,
+            },
+        ];
 
         let result = compact_session(
             &session,
@@ -580,6 +587,7 @@ mod tests {
 
     #[test]
     fn keeps_previous_compacted_context_when_compacting_again() {
+<<<<<<< HEAD
         let initial_session = Session {
             version: 1,
             messages: vec![
@@ -595,6 +603,19 @@ mod tests {
                 }]),
             ],
         };
+=======
+        let mut initial_session = Session::new();
+        initial_session.messages = vec![
+            ConversationMessage::user_text("Investigate rust/crates/runtime/src/compact.rs"),
+            ConversationMessage::assistant(vec![ContentBlock::Text {
+                text: "I will inspect the compact flow.".to_string(),
+            }]),
+            ConversationMessage::user_text("Also update rust/crates/runtime/src/conversation.rs"),
+            ConversationMessage::assistant(vec![ContentBlock::Text {
+                text: "Next: preserve prior summary context during auto compact.".to_string(),
+            }]),
+        ];
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
         let config = CompactionConfig {
             preserve_recent_messages: 2,
             max_estimated_tokens: 1,
@@ -609,6 +630,7 @@ mod tests {
             }]),
         ]);
 
+<<<<<<< HEAD
         let second = compact_session(
             &Session {
                 version: 1,
@@ -616,6 +638,11 @@ mod tests {
             },
             config,
         );
+=======
+        let mut second_session = Session::new();
+        second_session.messages = follow_up_messages;
+        let second = compact_session(&second_session, config);
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
 
         assert!(second
             .formatted_summary
@@ -644,6 +671,7 @@ mod tests {
     #[test]
     fn ignores_existing_compacted_summary_when_deciding_to_recompact() {
         let summary = "<summary>Conversation summary:\n- Scope: earlier work preserved.\n- Key timeline:\n  - user: large preserved context\n</summary>";
+<<<<<<< HEAD
         let session = Session {
             version: 1,
             messages: vec![
@@ -660,6 +688,22 @@ mod tests {
                 }]),
             ],
         };
+=======
+        let mut session = Session::new();
+        session.messages = vec![
+            ConversationMessage {
+                role: MessageRole::System,
+                blocks: vec![ContentBlock::Text {
+                    text: get_compact_continuation_message(summary, true, true),
+                }],
+                usage: None,
+            },
+            ConversationMessage::user_text("tiny"),
+            ConversationMessage::assistant(vec![ContentBlock::Text {
+                text: "recent".to_string(),
+            }]),
+        ];
+>>>>>>> 4d10caebc6c41d29e217a21e85849e27a03c1f6a
 
         assert!(!should_compact(
             &session,
